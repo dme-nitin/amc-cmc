@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Global Medicare — AMC/CMC Renewal Manager</title>
+<style>
+  :root{--navy:#0b2e4f;--blue:#1e6bb8;--green:#2e8b57;--ink:#1a2733;--bg:#f4f7fa;--line:#e2e8f0;}
+  *{box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
+  body{margin:0;background:var(--bg);color:var(--ink);}
+  header{background:var(--navy);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  header h1{font-size:17px;margin:0;font-weight:600;}
+  header .sub{font-size:12px;opacity:.85;}
+  .banner{background:#eef6ff;color:#0b2e4f;font-size:12px;padding:7px 20px;border-bottom:1px solid #cfe4fb;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;}
+  .banner.err{background:#fde2e2;color:#8a1c1c;border-bottom-color:#f3b6b6;}
+  .banner .refresh{cursor:pointer;text-decoration:underline;background:none;border:none;color:inherit;font:inherit;padding:0;}
+  .wrap{padding:16px 20px;max-width:1600px;margin:0 auto;}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .kpi .n{font-size:26px;font-weight:700;}
+  .kpi .l{font-size:12px;color:#5b6b7b;margin-top:2px;}
+  .kpi.red .n{color:#c0392b;} .kpi.amber .n{color:#b8860b;} .kpi.green .n{color:var(--green);} .kpi.blue .n{color:var(--blue);}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+  input,select{font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;}
+  .search{flex:1;min-width:180px;}
+  table{table-layout:fixed;width:100%;min-width:1180px;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12.5px;}
+  th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:normal;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;hyphens:auto;max-width:0;vertical-align:top;line-height:1.35;}
+  th{background:var(--navy);color:#fff;font-weight:600;cursor:pointer;position:sticky;top:0;white-space:normal;word-break:break-word;line-height:1.25;vertical-align:middle;padding:8px 8px;}
+  td.nowrap,th.nowrap{white-space:nowrap;word-break:normal;hyphens:none;}
+  th.wrap-header{white-space:normal;word-break:break-word;overflow-wrap:break-word;overflow:visible;text-align:center;line-height:1.15;}
+  tbody tr:hover{background:#f0f6ff;}
+  .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+  .u-overdue{background:#fde2e2;color:#c0392b;} .u-urgent{background:#ffe0b3;color:#9c5700;}
+  .u-soon{background:#fff3cd;color:#8a6d00;} .u-ok{background:#e3f4ea;color:#1e6e42;}
+  .u-closed{background:#eceff2;color:#7a8896;} .u-none{background:#eceff2;color:#7a8896;}
+  .scroll{overflow:auto;max-height:70vh;border-radius:10px;}
+  .right{text-align:right;} .center{text-align:center;}
+  .loading{padding:40px;text-align:center;color:#7a8896;}
+  .muted{color:#8a97a5;}
+  a.polink{color:var(--blue);text-decoration:none;font-weight:600;}
+  a.polink:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Global Medicare — AMC/CMC Renewal Manager</h1>
+  <div class="sub">Installed base &middot; contract renewals &middot; back-office register</div></div>
+</header>
+<div class="banner" id="banner">Connecting to live database…</div>
+
+<div class="wrap">
+  <div class="kpis" id="kpis"></div>
+  <div class="bar">
+    <input class="search" id="q" placeholder="Search hospital, product, PO number, email…" oninput="render()">
+    <select id="fType" onchange="render()"><option value="">All contracts</option><option>AMC</option><option>CMC</option><option>Warranty</option></select>
+    <select id="fStatus" onchange="render()"><option value="">All status</option><option>Active</option><option>Closed</option></select>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <colgroup>
+        <col style="width:3%">   <!-- S.No -->
+        <col style="width:11%">  <!-- Hospital/Doctor Name -->
+        <col style="width:11%">  <!-- Email ID- Finance -->
+        <col style="width:7%">   <!-- PO Number -->
+        <col style="width:5%">   <!-- PO Date -->
+        <col style="width:9%">   <!-- Product -->
+        <col style="width:4%">   <!-- Quantity -->
+        <col style="width:7%">   <!-- Invoice Amount -->
+        <col style="width:5%">   <!-- Invoice Date -->
+        <col style="width:6%">   <!-- Copy of PO -->
+        <col style="width:7%">   <!-- Task -->
+        <col style="width:5%">   <!-- Installation Date -->
+        <col style="width:5%">   <!-- End Date -->
+        <col style="width:4%">   <!-- AMC/CMC -->
+        <col style="width:4%">   <!-- AMC/CMC % -->
+        <col style="width:7%">   <!-- AMC/CMC Amount -->
+      </colgroup>
+      <thead><tr>
+        <th class="center nowrap">S.No</th>
+        <th onclick="sortBy('hospital')">Hospital/Doctor Name</th>
+        <th onclick="sortBy('email')">Email ID- Finance</th>
+        <th onclick="sortBy('poNumber')">PO Number</th>
+        <th class="nowrap" onclick="sortBy('poDate')">PO Date</th>
+        <th onclick="sortBy('product')">Product</th>
+        <th class="right nowrap" onclick="sortBy('quantity')">Quantity</th>
+        <th class="right" onclick="sortBy('invoiceAmount')">Invoice Amount</th>
+        <th onclick="sortBy('invoiceDate')" class="wrap-header">Invoice Date</th>
+        <th>Copy of PO</th>
+        <th onclick="sortBy('task')">Task</th>
+        <th onclick="sortBy('installDate')" class="wrap-header">Installation Date</th>
+        <th class="nowrap" onclick="sortBy('endDate')">End Date</th>
+        <th onclick="sortBy('amcCmc')" class="wrap-header">AMC/CMC</th>
+        <th class="right wrap-header">AMC/CMC %</th>
+        <th class="right" onclick="sortBy('amcCmcAmount')">AMC/CMC Amount</th>
+      </tr></thead>
+      <tbody id="tb"><tr><td colspan="16" class="loading">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ======================================================================
+// 1. POINT THIS AT YOUR DEPLOYED APPS SCRIPT WEB APP URL
+//    (Deploy > New deployment > Web app > copy the .../exec URL here)
+// ======================================================================
+var API_URL = 'https://script.google.com/macros/s/AKfycbwWr05l-TYJW048CZGUj_KIJmTLwsdTU7boT5HXbCeY34Y5FZ53sJdZtN9VyLInhcHz/exec';
+
+// Auto-refresh interval (ms). Set to 0 to disable auto-refresh.
+var AUTO_REFRESH_MS = 5 * 60 * 1000; // 5 minutes
+
+var SOON_DAYS=90, URGENT_DAYS=30;
+var SORT={key:'endDate',dir:1};
+var DATA=[];
+var COLS = 16; // total <th> count, for colspan on loading/empty rows
+
+// ---- date / number helpers ---------------------------------------------
+function asDate(s){
+  if(!s) return null;
+  var m=String(s).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m) return new Date(+m[3],+m[2]-1,+m[1]);
+  var d=new Date(s); return isNaN(d)?null:d;
+}
+// Always display dates as clean DD/MM/YYYY, regardless of how the sheet stored them.
+function formatDate(s){
+  var d = asDate(s);
+  if(!d) return '';
+  var dd = ('0'+d.getDate()).slice(-2);
+  var mm = ('0'+(d.getMonth()+1)).slice(-2);
+  return dd + '/' + mm + '/' + d.getFullYear();
+}
+function formatAmount(v){
+  v = Number(v||0);
+  if(!v) return '';
+  return v.toLocaleString('en-IN');
+}
+function midnight(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();}
+function urgency(days,status){
+  if(String(status).toLowerCase()==='closed')return 'closed';
+  if(days===null)return 'none';
+  if(days<0)return 'overdue';
+  if(days<=URGENT_DAYS)return 'urgent';
+  if(days<=SOON_DAYS)return 'soon';
+  return 'ok';
+}
+
+function setBanner(html, isErr){
+  var b = document.getElementById('banner');
+  b.className = 'banner' + (isErr ? ' err' : '');
+  b.innerHTML = html;
+}
+
+function boot(){
+  if(!API_URL || API_URL.indexOf('PASTE_YOUR') === 0){
+    setBanner('? Backend URL set nahi hai. index.html me API_URL variable set karo (Apps Script Web App /exec link).', true);
+    document.getElementById('tb').innerHTML = '<tr><td colspan="'+COLS+'" class="loading">Backend not configured.</td></tr>';
+    return;
+  }
+  setBanner('Connecting to live database…');
+  fetch(API_URL)
+    .then(function(res){ if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); })
+    .then(function(rows){
+      loadData(rows);
+      var now = new Date();
+      setBanner('Live from Google Sheet &middot; ' + rows.length + ' records &middot; last synced ' + now.toLocaleTimeString('en-IN') + ' &middot; <button class="refresh" onclick="boot()">Refresh now</button>');
+    })
+    .catch(function(err){
+      setBanner('? Could not load live data (' + err.message + '). <button class="refresh" onclick="boot()">Retry</button>', true);
+      if(!DATA.length) document.getElementById('tb').innerHTML = '<tr><td colspan="'+COLS+'" class="loading">Could not connect to backend.</td></tr>';
+    });
+}
+
+function loadData(rows){
+  var today=midnight(new Date());
+  DATA=(rows||[]).map(function(r){
+    var end=asDate(r.endDate);
+    var days=end?Math.round((midnight(end)-today)/86400000):null;
+    r.daysToEnd=days; r.urgency=urgency(days,r.status); return r;
+  });
+  render();
+}
+
+function kpiCounts(rows){
+  var k={active:0,overdue:0,urgent:0,soon:0,val:0,none:0};
+  rows.forEach(function(r){
+    if(r.status!=='Closed'){k.active++;k.val+=(r.value||0);}
+    if(r.urgency==='overdue')k.overdue++;
+    if(r.urgency==='urgent')k.urgent++;
+    if(r.urgency==='soon')k.soon++;
+    if(r.urgency==='none')k.none++;
+  });
+  return k;
+}
+
+function render(){
+  var q=(document.getElementById('q').value||'').toLowerCase();
+  var fT=document.getElementById('fType').value;
+  var fS=document.getElementById('fStatus').value;
+  var rows=DATA.filter(function(r){
+    if(fT&&r.amcCmc!==fT)return false;
+    if(fS&&r.status!==fS)return false;
+    if(q){
+      var b=(r.hospital+' '+r.product+' '+(r.poNumber||'')+' '+(r.email||'')+' '+(r.task||'')).toLowerCase();
+      if(b.indexOf(q)<0)return false;
+    }
+    return true;
+  });
+  rows.sort(function(a,b){
+    var k=SORT.key,x=a[k],y=b[k];
+    if(x==null)x=''; if(y==null)y='';
+    if(typeof x==='string'){x=x.toLowerCase();y=(''+y).toLowerCase();}
+    return x<y?-1*SORT.dir:x>y?SORT.dir:0;
+  });
+
+  var k=kpiCounts(DATA);
+  document.getElementById('kpis').innerHTML=
+    kpi('blue',k.active,'Active contracts')+
+    kpi('red',k.overdue,'Overdue')+
+    kpi('amber',k.urgent,'Urgent (&le;30d)')+
+    kpi('amber',k.soon,'Due soon (&le;90d)')+
+    kpi('blue',k.none,'No end date yet')+
+    kpi('green','&#8377;'+fmtCr(k.val),'Active contract value');
+
+  var tb=document.getElementById('tb');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="'+COLS+'" class="loading">No records match.</td></tr>';return;}
+
+  tb.innerHTML=rows.map(function(r,i){
+    var poCopyCell = r.poCopy
+      ? (/^https?:\/\//i.test(r.poCopy)
+          ? '<a class="polink" href="'+esc(r.poCopy)+'" target="_blank" rel="noopener">View</a>'
+          : esc(r.poCopy))
+      : '<span class="muted">—</span>';
+    return '<tr>'+
+      '<td class="center muted nowrap">'+(i+1)+'</td>'+
+      '<td>'+esc(r.hospital)+'</td>'+
+      '<td>'+esc(r.email||'')+'</td>'+
+      '<td>'+esc(r.poNumber||'')+'</td>'+
+      '<td class="nowrap">'+(r.poDate?formatDate(r.poDate):'<span class="muted">No date</span>')+'</td>'+
+      '<td>'+esc(r.product)+'</td>'+
+      '<td class="right nowrap">'+(r.quantity||'')+'</td>'+
+      '<td class="right nowrap">'+formatAmount(r.invoiceAmount)+'</td>'+
+      '<td class="nowrap">'+(r.invoiceDate?formatDate(r.invoiceDate):'<span class="muted">No date</span>')+'</td>'+
+      '<td>'+poCopyCell+'</td>'+
+      '<td>'+esc(r.task||'')+'</td>'+
+      '<td class="nowrap">'+(r.installDate?formatDate(r.installDate):'<span class="muted">No date</span>')+'</td>'+
+      '<td class="nowrap">'+(r.endDate?formatDate(r.endDate):'<span class="muted">No date</span>')+'</td>'+
+      '<td class="nowrap">'+esc(r.amcCmc||'')+'</td>'+
+      '<td class="right nowrap">'+esc(r.amcCmcPercent||'')+'</td>'+
+      '<td class="right nowrap">'+formatAmount(r.amcCmcAmount)+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function kpi(c,n,l){return '<div class="kpi '+c+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
+function fmtCr(v){return v>=10000000?(v/10000000).toFixed(2)+' Cr':v>=100000?(v/100000).toFixed(1)+' L':Number(v).toLocaleString('en-IN');}
+function esc(s){return (s==null?'':String(s)).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+function sortBy(k){SORT.dir=(SORT.key===k)?-SORT.dir:1;SORT.key=k;render();}
+
+boot();
+if(AUTO_REFRESH_MS>0){ setInterval(boot, AUTO_REFRESH_MS); }
+</script>
+</body>
+</html>
