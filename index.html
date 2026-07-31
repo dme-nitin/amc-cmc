@@ -23,9 +23,9 @@
   .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
   input,select{font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;}
   .search{flex:1;min-width:180px;}
-  table{table-layout:fixed;width:100%;min-width:1180px;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12.5px;}
+  table{table-layout:fixed;width:100%;min-width:1180px;border-collapse:collapse;background:#fff;border:1px solid var(--line);font-size:12.5px;}
   th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:normal;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;hyphens:auto;max-width:0;vertical-align:top;line-height:1.35;}
-  th{background:var(--navy);color:#fff;font-weight:600;cursor:pointer;position:sticky;top:0;white-space:normal;word-break:break-word;line-height:1.25;vertical-align:middle;padding:8px 8px;}
+  th{background:var(--navy);color:#fff;font-weight:600;cursor:pointer;position:sticky;top:0;z-index:5;white-space:normal;word-break:break-word;line-height:1.25;vertical-align:middle;padding:8px 8px;box-shadow:0 2px 4px rgba(0,0,0,0.15);}
   td.nowrap,th.nowrap{white-space:nowrap;word-break:normal;hyphens:none;}
   th.wrap-header{white-space:normal;word-break:break-word;overflow-wrap:break-word;overflow:visible;text-align:center;line-height:1.15;}
   tbody tr:hover{background:#f0f6ff;}
@@ -152,7 +152,7 @@ function setBanner(html, isErr){
 
 function boot(){
   if(!API_URL || API_URL.indexOf('PASTE_YOUR') === 0){
-    setBanner('? Backend URL set nahi hai. index.html me API_URL variable set karo (Apps Script Web App /exec link).', true);
+    setBanner('⚠ Backend URL set nahi hai. index.html me API_URL variable set karo (Apps Script Web App /exec link).', true);
     document.getElementById('tb').innerHTML = '<tr><td colspan="'+COLS+'" class="loading">Backend not configured.</td></tr>';
     return;
   }
@@ -165,7 +165,7 @@ function boot(){
       setBanner('Live from Google Sheet &middot; ' + rows.length + ' records &middot; last synced ' + now.toLocaleTimeString('en-IN') + ' &middot; <button class="refresh" onclick="boot()">Refresh now</button>');
     })
     .catch(function(err){
-      setBanner('? Could not load live data (' + err.message + '). <button class="refresh" onclick="boot()">Retry</button>', true);
+      setBanner('⚠ Could not load live data (' + err.message + '). <button class="refresh" onclick="boot()">Retry</button>', true);
       if(!DATA.length) document.getElementById('tb').innerHTML = '<tr><td colspan="'+COLS+'" class="loading">Could not connect to backend.</td></tr>';
     });
 }
