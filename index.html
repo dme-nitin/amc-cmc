@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Global Medicare — AMC/CMC Renewal Manager</title>
+<title>Global Medicare â€” AMC/CMC Renewal Manager</title>
 <style>
   :root{--navy:#0b2e4f;--blue:#1e6bb8;--green:#2e8b57;--ink:#1a2733;--bg:#f4f7fa;--line:#e2e8f0;}
   *{box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
@@ -43,15 +43,15 @@
 </head>
 <body>
 <header>
-  <div><h1>Global Medicare — AMC/CMC Renewal Manager</h1>
+  <div><h1>Global Medicare â€” AMC/CMC Renewal Manager</h1>
   <div class="sub">Installed base &middot; contract renewals &middot; back-office register</div></div>
 </header>
-<div class="banner" id="banner">Connecting to live database…</div>
+<div class="banner" id="banner">Connecting to live databaseâ€¦</div>
 
 <div class="wrap">
   <div class="kpis" id="kpis"></div>
   <div class="bar">
-    <input class="search" id="q" placeholder="Search hospital, product, PO number, email…" oninput="render()">
+    <input class="search" id="q" placeholder="Search hospital, product, PO number, emailâ€¦" oninput="render()">
     <select id="fType" onchange="render()"><option value="">All contracts</option><option>AMC</option><option>CMC</option><option>Warranty</option></select>
     <select id="fStatus" onchange="render()"><option value="">All status</option><option>Active</option><option>Closed</option></select>
   </div>
@@ -94,7 +94,7 @@
         <th class="right wrap-header">AMC/CMC %</th>
         <th class="right" onclick="sortBy('amcCmcAmount')">AMC/CMC Amount</th>
       </tr></thead>
-      <tbody id="tb"><tr><td colspan="16" class="loading">Loading…</td></tr></tbody>
+      <tbody id="tb"><tr><td colspan="16" class="loading">Loadingâ€¦</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -156,7 +156,7 @@ function boot(){
     document.getElementById('tb').innerHTML = '<tr><td colspan="'+COLS+'" class="loading">Backend not configured.</td></tr>';
     return;
   }
-  setBanner('Connecting to live database…');
+  setBanner('Connecting to live databaseâ€¦');
   fetch(API_URL)
     .then(function(res){ if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); })
     .then(function(rows){
@@ -229,7 +229,7 @@ function render(){
       ? (/^https?:\/\//i.test(r.poCopy)
           ? '<a class="polink" href="'+esc(r.poCopy)+'" target="_blank" rel="noopener">View</a>'
           : esc(r.poCopy))
-      : '<span class="muted">—</span>';
+      : '<span class="muted">â€”</span>';
     return '<tr>'+
       '<td class="center muted nowrap">'+(i+1)+'</td>'+
       '<td>'+esc(r.hospital)+'</td>'+
