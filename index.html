@@ -17,6 +17,9 @@
   .wrap{padding:16px 20px;max-width:1600px;margin:0 auto;}
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;}
   .kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .kpi.clickable{cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;user-select:none;}
+  .kpi.clickable:hover{box-shadow:0 3px 10px rgba(0,0,0,0.10);transform:translateY(-2px);}
+  .kpi.active{border:2px solid var(--navy);box-shadow:0 0 0 3px rgba(11,46,79,0.12);}
   .kpi .n{font-size:26px;font-weight:700;}
   .kpi .l{font-size:12px;color:#5b6b7b;margin-top:2px;}
   .kpi.red .n{color:#c0392b;} .kpi.amber .n{color:#b8860b;} .kpi.green .n{color:var(--green);} .kpi.blue .n{color:var(--blue);}
@@ -50,6 +53,7 @@
 
 <div class="wrap">
   <div class="kpis" id="kpis"></div>
+  <div id="tableSection">
   <div class="bar">
     <input class="search" id="q" placeholder="Search hospital, product, PO number, email…" oninput="render()">
     <select id="fType" onchange="render()"><option value="">All contracts</option><option>AMC</option><option>CMC</option><option>Warranty</option></select>
@@ -97,6 +101,7 @@
       <tbody id="tb"><tr><td colspan="16" class="loading">Loading…</td></tr></tbody>
     </table>
   </div>
+  </div>
 </div>
 
 <script>
@@ -113,6 +118,7 @@ var SOON_DAYS=90, URGENT_DAYS=30;
 var SORT={key:'endDate',dir:1};
 var DATA=[];
 var COLS = 16; // total <th> count, for colspan on loading/empty rows
+var ACTIVE_URGENCY=''; // '' = no drill-down filter, else 'overdue'|'urgent'|'soon'|'none'
 
 // ---- date / number helpers ---------------------------------------------
 function asDate(s){
@@ -152,7 +158,7 @@ function setBanner(html, isErr){
 
 function boot(){
   if(!API_URL || API_URL.indexOf('PASTE_YOUR') === 0){
-    setBanner('⚠ Backend URL set nahi hai. index.html me API_URL variable set karo (Apps Script Web App /exec link).', true);
+    setBanner('? Backend URL set nahi hai. index.html me API_URL variable set karo (Apps Script Web App /exec link).', true);
     document.getElementById('tb').innerHTML = '<tr><td colspan="'+COLS+'" class="loading">Backend not configured.</td></tr>';
     return;
   }
@@ -165,7 +171,7 @@ function boot(){
       setBanner('Live from Google Sheet &middot; ' + rows.length + ' records &middot; last synced ' + now.toLocaleTimeString('en-IN') + ' &middot; <button class="refresh" onclick="boot()">Refresh now</button>');
     })
     .catch(function(err){
-      setBanner('⚠ Could not load live data (' + err.message + '). <button class="refresh" onclick="boot()">Retry</button>', true);
+      setBanner('? Could not load live data (' + err.message + '). <button class="refresh" onclick="boot()">Retry</button>', true);
       if(!DATA.length) document.getElementById('tb').innerHTML = '<tr><td colspan="'+COLS+'" class="loading">Could not connect to backend.</td></tr>';
     });
 }
@@ -199,6 +205,7 @@ function render(){
   var rows=DATA.filter(function(r){
     if(fT&&r.amcCmc!==fT)return false;
     if(fS&&r.status!==fS)return false;
+    if(ACTIVE_URGENCY&&r.urgency!==ACTIVE_URGENCY)return false;
     if(q){
       var b=(r.hospital+' '+r.product+' '+(r.poNumber||'')+' '+(r.email||'')+' '+(r.task||'')).toLowerCase();
       if(b.indexOf(q)<0)return false;
@@ -214,11 +221,11 @@ function render(){
 
   var k=kpiCounts(DATA);
   document.getElementById('kpis').innerHTML=
-    kpi('blue',k.active,'Active contracts')+
-    kpi('red',k.overdue,'Overdue')+
-    kpi('amber',k.urgent,'Urgent (&le;30d)')+
-    kpi('amber',k.soon,'Due soon (&le;90d)')+
-    kpi('blue',k.none,'No end date yet')+
+    kpi('blue',k.active,'Active contracts','')+
+    kpi('red',k.overdue,'Overdue','overdue')+
+    kpi('amber',k.urgent,'Urgent (&le;30d)','urgent')+
+    kpi('amber',k.soon,'Due soon (&le;90d)','soon')+
+    kpi('blue',k.none,'No end date yet','none')+
     kpi('green','&#8377;'+fmtCr(k.val),'Active contract value');
 
   var tb=document.getElementById('tb');
@@ -251,7 +258,25 @@ function render(){
   }).join('');
 }
 
-function kpi(c,n,l){return '<div class="kpi '+c+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
+function kpi(c,n,l,key){
+  var clickable = (key!==undefined);
+  var active = clickable && (ACTIVE_URGENCY===key);
+  var cls = 'kpi '+c+(clickable?' clickable':'')+(active?' active':'');
+  var attrs = clickable
+    ? ' onclick="filterByUrgency(\''+key+'\')" onkeypress="if(event.key===\'Enter\')filterByUrgency(\''+key+'\')" role="button" tabindex="0"'
+    : '';
+  return '<div class="'+cls+'"'+attrs+'><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';
+}
+function filterByUrgency(key){
+  if(key===''){
+    ACTIVE_URGENCY=''; // "Active contracts" card also acts as the reset/show-all option
+  } else {
+    ACTIVE_URGENCY = (ACTIVE_URGENCY===key) ? '' : key; // clicking the same card again clears the filter
+  }
+  render();
+  var target = document.getElementById('tableSection');
+  if(target){ target.scrollIntoView({behavior:'smooth', block:'start'}); }
+}
 function fmtCr(v){return v>=10000000?(v/10000000).toFixed(2)+' Cr':v>=100000?(v/100000).toFixed(1)+' L':Number(v).toLocaleString('en-IN');}
 function esc(s){return (s==null?'':String(s)).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
 function sortBy(k){SORT.dir=(SORT.key===k)?-SORT.dir:1;SORT.key=k;render();}
