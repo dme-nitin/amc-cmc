@@ -26,7 +26,7 @@
   .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
   input,select{font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;}
   .search{flex:1;min-width:180px;}
-  table{table-layout:fixed;width:100%;min-width:1260px;border-collapse:collapse;background:#fff;border:1px solid var(--line);font-size:12.5px;}
+  table{table-layout:fixed;width:100%;min-width:1340px;border-collapse:collapse;background:#fff;border:1px solid var(--line);font-size:12.5px;}
   th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:normal;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;hyphens:auto;max-width:0;vertical-align:top;line-height:1.35;}
   th{background:var(--navy);color:#fff;font-weight:600;cursor:pointer;position:sticky;top:0;z-index:5;white-space:normal;word-break:break-word;line-height:1.25;vertical-align:middle;padding:8px 8px;box-shadow:0 2px 4px rgba(0,0,0,0.15);}
   td.nowrap,th.nowrap{white-space:nowrap;word-break:normal;hyphens:none;}
@@ -42,6 +42,26 @@
   .muted{color:#8a97a5;}
   a.polink{color:var(--blue);text-decoration:none;font-weight:600;}
   a.polink:hover{text-decoration:underline;}
+  .quote-btn{background:var(--navy);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;}
+  .quote-btn:hover{background:var(--blue);}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,30,0.5);z-index:100;align-items:center;justify-content:center;padding:16px;}
+  .modal-overlay.open{display:flex;}
+  .modal-box{background:#fff;border-radius:12px;max-width:640px;width:100%;max-height:90vh;overflow:auto;padding:20px 24px;box-shadow:0 12px 40px rgba(0,0,0,0.25);}
+  .modal-box h2{margin:0 0 4px;font-size:18px;color:var(--navy);}
+  .modal-box .modal-sub{font-size:12px;color:#5b6b7b;margin-bottom:16px;}
+  .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}
+  .modal-grid label{display:flex;flex-direction:column;font-size:12px;font-weight:600;color:#3a4a5a;gap:4px;}
+  .modal-grid label span{font-weight:600;}
+  .modal-grid input,.modal-grid select{width:100%;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;}
+  .modal-grid .full{grid-column:1 / -1;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+  .btn{padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:#fff;}
+  .btn-primary{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .btn-primary:hover{background:var(--blue);border-color:var(--blue);}
+  .btn-primary:disabled{opacity:.6;cursor:not-allowed;}
+  .modal-status{font-size:12.5px;margin-top:10px;min-height:18px;}
+  .modal-status.ok{color:#1e6e42;} .modal-status.err{color:#c0392b;}
+  .modal-status a{color:var(--blue);font-weight:600;}
 </style>
 </head>
 <body>
@@ -64,22 +84,23 @@
     <table>
       <colgroup>
         <col style="width:3%">   <!-- S.No -->
-        <col style="width:10%">  <!-- Hospital/Doctor Name -->
-        <col style="width:10%">  <!-- Email ID- Finance -->
+        <col style="width:9%">   <!-- Hospital/Doctor Name -->
+        <col style="width:9%">   <!-- Email ID- Finance -->
         <col style="width:7%">   <!-- PO Number -->
         <col style="width:5%">   <!-- PO Date -->
-        <col style="width:8%">   <!-- Product -->
+        <col style="width:7%">   <!-- Product -->
         <col style="width:4%">   <!-- Quantity -->
         <col style="width:6%">   <!-- Invoice Amount -->
         <col style="width:5%">   <!-- Invoice Date -->
-        <col style="width:6%">   <!-- Copy of PO -->
-        <col style="width:6%">   <!-- Task -->
+        <col style="width:5%">   <!-- Copy of PO -->
+        <col style="width:5%">   <!-- Task -->
         <col style="width:5%">   <!-- Installation Date -->
         <col style="width:5%">   <!-- End Date -->
         <col style="width:4%">   <!-- AMC/CMC -->
         <col style="width:4%">   <!-- AMC/CMC % -->
         <col style="width:6%">   <!-- AMC/CMC Amount -->
         <col style="width:6%">   <!-- Serial No -->
+        <col style="width:5%">   <!-- Action -->
       </colgroup>
       <thead><tr>
         <th class="center nowrap">S.No</th>
@@ -99,10 +120,54 @@
         <th class="right wrap-header">AMC/CMC %</th>
         <th class="right" onclick="sortBy('amcCmcAmount')">AMC/CMC Amount</th>
         <th onclick="sortBy('serialNo')" class="wrap-header">Serial No</th>
+        <th class="center nowrap">Action</th>
       </tr></thead>
-      <tbody id="tb"><tr><td colspan="17" class="loading">Loading…</td></tr></tbody>
+      <tbody id="tb"><tr><td colspan="18" class="loading">Loading…</td></tr></tbody>
     </table>
   </div>
+  </div>
+</div>
+
+<!-- ===================== Quotation Generation Modal ===================== -->
+<div class="modal-overlay" id="quoteModal">
+  <div class="modal-box">
+    <h2>Generate AMC/CMC Quotation</h2>
+    <div class="modal-sub" id="quoteModalSub">Fill in the details below and generate a PDF quotation.</div>
+    <div class="modal-grid">
+      <label><span>Customer / Hospital Name</span><input id="qf_customerName"></label>
+      <label><span>Equipment Name</span><input id="qf_equipmentName"></label>
+      <label class="full"><span>Address</span><input id="qf_address" placeholder="Optional"></label>
+      <label><span>Contract Type</span>
+        <select id="qf_contractType">
+          <option value="AMC">AMC — Annual Maintenance Contract</option>
+          <option value="CMC">CAMC — Comprehensive Annual Maintenance Contract</option>
+        </select>
+      </label>
+      <label><span>Serial No</span><input id="qf_serialNo"></label>
+      <label><span>Invoice No</span><input id="qf_invoiceNo"></label>
+      <label><span>Invoice Date (DD/MM/YYYY)</span><input id="qf_invoiceDate"></label>
+      <label><span>Invoice Amount (Rs)</span><input id="qf_invoiceAmount" type="number"></label>
+      <label><span>Contract No</span><input id="qf_contractNo" placeholder="Auto-generated if blank"></label>
+
+      <label><span>Quotation Mode</span>
+        <select id="qf_mode" onchange="onModeChange()">
+          <option value="single">Single Year</option>
+          <option value="breakup">Year-wise Breakup</option>
+          <option value="combined">Combined Multi-Year Package</option>
+        </select>
+      </label>
+      <label><span>Number of Years</span><input id="qf_years" type="number" min="1" value="1" onchange="onModeChange()"></label>
+      <label id="qf_singleYearWrap"><span>Which Year (for Single mode)</span><input id="qf_singleYearIndex" type="number" min="1" value="1"></label>
+      <label><span>AMC/CMC Charges — Year 1 (Rs)</span><input id="qf_baseAmount" type="number"></label>
+      <label><span>Escalation % per year</span><input id="qf_escalationPct" type="number" value="0"></label>
+      <label><span>GST</span><input id="qf_gstDisplay" value="18% (fixed)" disabled></label>
+      <label><span>Contract Start Date (DD/MM/YYYY)</span><input id="qf_startDate" placeholder="Optional — used for period dates"></label>
+    </div>
+    <div class="modal-status" id="qf_status"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn" onclick="closeQuotationModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" id="qf_submitBtn" onclick="submitQuotation()">Generate PDF</button>
+    </div>
   </div>
 </div>
 
@@ -119,7 +184,8 @@ var AUTO_REFRESH_MS = 5 * 60 * 1000; // 5 minutes
 var SOON_DAYS=90, URGENT_DAYS=30;
 var SORT={key:'endDate',dir:1};
 var DATA=[];
-var COLS = 17; // total <th> count, for colspan on loading/empty rows
+var ROW_BY_ID={}; // id -> record, used to prefill the quotation modal
+var COLS = 18; // total <th> count, for colspan on loading/empty rows
 var ACTIVE_URGENCY=''; // '' = no drill-down filter, else 'overdue'|'urgent'|'soon'|'none'
 
 // ---- date / number helpers ---------------------------------------------
@@ -185,6 +251,8 @@ function loadData(rows){
     var days=end?Math.round((midnight(end)-today)/86400000):null;
     r.daysToEnd=days; r.urgency=urgency(days,r.status); return r;
   });
+  ROW_BY_ID={};
+  DATA.forEach(function(r){ ROW_BY_ID[r.id]=r; });
   render();
 }
 
@@ -257,6 +325,7 @@ function render(){
       '<td class="right nowrap">'+esc(r.amcCmcPercent||'')+'</td>'+
       '<td class="right nowrap">'+formatAmount(r.amcCmcAmount)+'</td>'+
       '<td class="nowrap">'+(r.serialNo&&r.serialNo!=='N/A'?esc(r.serialNo):'<span class="muted">N/A</span>')+'</td>'+
+      '<td class="center nowrap"><button type="button" class="quote-btn" onclick="openQuotationModal(\''+esc(r.id)+'\')">Quote</button></td>'+
     '</tr>';
   }).join('');
 }
@@ -283,6 +352,99 @@ function filterByUrgency(key){
 function fmtCr(v){return v>=10000000?(v/10000000).toFixed(2)+' Cr':v>=100000?(v/100000).toFixed(1)+' L':Number(v).toLocaleString('en-IN');}
 function esc(s){return (s==null?'':String(s)).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
 function sortBy(k){SORT.dir=(SORT.key===k)?-SORT.dir:1;SORT.key=k;render();}
+
+// ---- Quotation modal -----------------------------------------------------
+function onModeChange(){
+  var mode = document.getElementById('qf_mode').value;
+  var years = parseInt(document.getElementById('qf_years').value,10)||1;
+  document.getElementById('qf_singleYearWrap').style.display = (mode==='single') ? 'flex' : 'none';
+  var idxInput = document.getElementById('qf_singleYearIndex');
+  if(parseInt(idxInput.value,10) > years) idxInput.value = years;
+  idxInput.max = years;
+}
+
+function openQuotationModal(id){
+  var r = ROW_BY_ID[id];
+  if(!r) return;
+  document.getElementById('qf_customerName').value = r.hospital || '';
+  document.getElementById('qf_equipmentName').value = r.product || '';
+  document.getElementById('qf_address').value = '';
+  var rawType = String(r.amcCmc || 'AMC').toUpperCase();
+  document.getElementById('qf_contractType').value = (rawType.indexOf('CMC') !== -1 || rawType.indexOf('CAMC') !== -1) ? 'CMC' : 'AMC';
+  document.getElementById('qf_serialNo').value = (r.serialNo && r.serialNo!=='N/A') ? r.serialNo : '';
+  document.getElementById('qf_invoiceNo').value = r.poNumber || '';
+  document.getElementById('qf_invoiceDate').value = r.invoiceDate ? formatDate(r.invoiceDate) : '';
+  document.getElementById('qf_invoiceAmount').value = r.invoiceAmount || '';
+  document.getElementById('qf_contractNo').value = '';
+  document.getElementById('qf_mode').value = 'single';
+  document.getElementById('qf_years').value = 1;
+  document.getElementById('qf_singleYearIndex').value = 1;
+  document.getElementById('qf_baseAmount').value = r.amcCmcAmount || '';
+  document.getElementById('qf_escalationPct').value = r.amcCmcPercent ? String(r.amcCmcPercent).replace(/[^0-9.]/g,'') : 0;
+  document.getElementById('qf_startDate').value = r.installDate ? formatDate(r.installDate) : (r.endDate ? formatDate(r.endDate) : '');
+  document.getElementById('qf_status').textContent = '';
+  document.getElementById('qf_status').className = 'modal-status';
+  onModeChange();
+  document.getElementById('quoteModal').classList.add('open');
+}
+
+function closeQuotationModal(){
+  document.getElementById('quoteModal').classList.remove('open');
+}
+
+function submitQuotation(){
+  if(!API_URL || API_URL.indexOf('PASTE_YOUR') === 0){
+    var st = document.getElementById('qf_status');
+    st.textContent = '? Backend URL configured nahi hai.';
+    st.className = 'modal-status err';
+    return;
+  }
+  var payload = {
+    action: 'generateQuotation',
+    mode: document.getElementById('qf_mode').value,
+    customerName: document.getElementById('qf_customerName').value,
+    address: document.getElementById('qf_address').value,
+    contractType: document.getElementById('qf_contractType').value,
+    equipmentName: document.getElementById('qf_equipmentName').value,
+    serialNo: document.getElementById('qf_serialNo').value,
+    invoiceNo: document.getElementById('qf_invoiceNo').value,
+    invoiceDate: document.getElementById('qf_invoiceDate').value,
+    invoiceAmount: document.getElementById('qf_invoiceAmount').value,
+    contractNo: document.getElementById('qf_contractNo').value,
+    years: document.getElementById('qf_years').value,
+    singleYearIndex: document.getElementById('qf_singleYearIndex').value,
+    baseAmount: document.getElementById('qf_baseAmount').value,
+    escalationPct: document.getElementById('qf_escalationPct').value,
+    startDate: document.getElementById('qf_startDate').value
+  };
+
+  var btn = document.getElementById('qf_submitBtn');
+  var st = document.getElementById('qf_status');
+  btn.disabled = true;
+  st.className = 'modal-status';
+  st.textContent = 'Generating PDF… is me kuch second lag sakte hain.';
+
+  // Sent as text/plain (no explicit Content-Type) so the browser treats this
+  // as a "simple request" and skips the CORS preflight — Apps Script Web
+  // Apps don't handle OPTIONS preflight requests.
+  fetch(API_URL, { method:'POST', body: JSON.stringify(payload) })
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      btn.disabled = false;
+      if(data.success){
+        st.className = 'modal-status ok';
+        st.innerHTML = '? Quotation ready — <a href="'+data.url+'" target="_blank" rel="noopener">Open / Download PDF</a>';
+      } else {
+        st.className = 'modal-status err';
+        st.textContent = '? ' + (data.error || 'Kuch galat ho gaya.');
+      }
+    })
+    .catch(function(err){
+      btn.disabled = false;
+      st.className = 'modal-status err';
+      st.textContent = '? Request fail ho gayi: ' + err.message;
+    });
+}
 
 boot();
 if(AUTO_REFRESH_MS>0){ setInterval(boot, AUTO_REFRESH_MS); }
