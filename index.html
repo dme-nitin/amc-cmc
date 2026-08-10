@@ -160,7 +160,7 @@ function setBanner(html, isErr){
 
 function boot(){
   if(!API_URL || API_URL.indexOf('PASTE_YOUR') === 0){
-    setBanner('⚠ Backend URL set nahi hai. index.html me API_URL variable set karo (Apps Script Web App /exec link).', true);
+    setBanner('? Backend URL set nahi hai. index.html me API_URL variable set karo (Apps Script Web App /exec link).', true);
     document.getElementById('tb').innerHTML = '<tr><td colspan="'+COLS+'" class="loading">Backend not configured.</td></tr>';
     return;
   }
@@ -173,7 +173,7 @@ function boot(){
       setBanner('Live from Google Sheet &middot; ' + rows.length + ' records &middot; last synced ' + now.toLocaleTimeString('en-IN') + ' &middot; <button class="refresh" onclick="boot()">Refresh now</button>');
     })
     .catch(function(err){
-      setBanner('⚠ Could not load live data (' + err.message + '). <button class="refresh" onclick="boot()">Retry</button>', true);
+      setBanner('? Could not load live data (' + err.message + '). <button class="refresh" onclick="boot()">Retry</button>', true);
       if(!DATA.length) document.getElementById('tb').innerHTML = '<tr><td colspan="'+COLS+'" class="loading">Could not connect to backend.</td></tr>';
     });
 }
