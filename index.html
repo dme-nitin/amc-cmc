@@ -167,6 +167,7 @@
     <div class="modal-actions">
       <button type="button" class="btn" onclick="closeQuotationModal()">Cancel</button>
       <button type="button" class="btn btn-primary" id="qf_submitBtn" onclick="submitQuotation()">Generate PDF</button>
+      <button type="button" class="btn btn-primary" id="qf_emailBtn" onclick="sendQuotationEmail()" style="display:none;">Send Email</button>
     </div>
   </div>
 </div>
@@ -185,6 +186,8 @@ var SOON_DAYS=90, URGENT_DAYS=30;
 var SORT={key:'endDate',dir:1};
 var DATA=[];
 var ROW_BY_ID={}; // id -> record, used to prefill the quotation modal
+var CURRENT_ROW_ID=null; // which row's modal is currently open
+var LAST_QUOTATION=null; // {fileId, fileName, contractType, equipmentName, customerName} of the last PDF generated in this modal session
 var COLS = 18; // total <th> count, for colspan on loading/empty rows
 var ACTIVE_URGENCY=''; // '' = no drill-down filter, else 'overdue'|'urgent'|'soon'|'none'
 
@@ -366,6 +369,9 @@ function onModeChange(){
 function openQuotationModal(id){
   var r = ROW_BY_ID[id];
   if(!r) return;
+  CURRENT_ROW_ID = id;
+  LAST_QUOTATION = null;
+  document.getElementById('qf_emailBtn').style.display = 'none';
   document.getElementById('qf_customerName').value = r.hospital || '';
   document.getElementById('qf_equipmentName').value = r.product || '';
   document.getElementById('qf_address').value = '';
@@ -419,8 +425,11 @@ function submitQuotation(){
   };
 
   var btn = document.getElementById('qf_submitBtn');
+  var emailBtn = document.getElementById('qf_emailBtn');
   var st = document.getElementById('qf_status');
   btn.disabled = true;
+  emailBtn.style.display = 'none';
+  LAST_QUOTATION = null;
   st.className = 'modal-status';
   st.textContent = 'Generating PDF… is me kuch second lag sakte hain.';
 
@@ -434,6 +443,17 @@ function submitQuotation(){
       if(data.success){
         st.className = 'modal-status ok';
         st.innerHTML = '✅ Quotation ready — <a href="'+data.url+'" target="_blank" rel="noopener">Open / Download PDF</a>';
+        // Send Email only appears once a PDF has actually been generated —
+        // and it emails this exact PDF (same fileId), never a fresh one.
+        LAST_QUOTATION = {
+          fileId: data.fileId,
+          fileName: data.fileName,
+          rowId: CURRENT_ROW_ID,
+          contractType: payload.contractType,
+          equipmentName: payload.equipmentName,
+          customerName: payload.customerName
+        };
+        emailBtn.style.display = 'inline-block';
       } else {
         st.className = 'modal-status err';
         st.textContent = '⚠ ' + (data.error || 'Kuch galat ho gaya.');
@@ -443,6 +463,35 @@ function submitQuotation(){
       btn.disabled = false;
       st.className = 'modal-status err';
       st.textContent = '⚠ Request fail ho gayi: ' + err.message;
+    });
+}
+
+function sendQuotationEmail(){
+  if(!LAST_QUOTATION || !LAST_QUOTATION.fileId){
+    return; // Send Email is hidden until a PDF exists, so this shouldn't fire — safety guard only.
+  }
+  var emailBtn = document.getElementById('qf_emailBtn');
+  var st = document.getElementById('qf_status');
+  emailBtn.disabled = true;
+  st.className = 'modal-status';
+  st.textContent = 'Sending email…';
+
+  fetch(API_URL, { method:'POST', body: JSON.stringify({ action:'sendQuotationEmail', fileId: LAST_QUOTATION.fileId, fileName: LAST_QUOTATION.fileName, rowId: LAST_QUOTATION.rowId, contractType: LAST_QUOTATION.contractType, equipmentName: LAST_QUOTATION.equipmentName, customerName: LAST_QUOTATION.customerName }) })
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      emailBtn.disabled = false;
+      if(data.success){
+        st.className = 'modal-status ok';
+        st.innerHTML = '✅ Quotation sent successfully to ' + esc(data.email);
+      } else {
+        st.className = 'modal-status err';
+        st.textContent = '⚠ ' + (data.error || 'Email could not be sent. Please try again.');
+      }
+    })
+    .catch(function(err){
+      emailBtn.disabled = false;
+      st.className = 'modal-status err';
+      st.textContent = '⚠ Email could not be sent. Please try again.';
     });
 }
 
