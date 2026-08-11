@@ -144,7 +144,7 @@
         </select>
       </label>
       <label><span>Serial No</span><input id="qf_serialNo"></label>
-      <label><span>Invoice No</span><input id="qf_invoiceNo"></label>
+      <label><span>PO Number</span><input id="qf_poNumber"></label>
       <label><span>Invoice Date (DD/MM/YYYY)</span><input id="qf_invoiceDate"></label>
       <label><span>Invoice Amount (Rs)</span><input id="qf_invoiceAmount" type="number"></label>
       <label><span>Contract No</span><input id="qf_contractNo" placeholder="Auto-generated if blank"></label>
@@ -226,7 +226,7 @@ function setBanner(html, isErr){
 
 function boot(){
   if(!API_URL || API_URL.indexOf('PASTE_YOUR') === 0){
-    setBanner('? Backend URL set nahi hai. index.html me API_URL variable set karo (Apps Script Web App /exec link).', true);
+    setBanner('⚠ Backend URL set nahi hai. index.html me API_URL variable set karo (Apps Script Web App /exec link).', true);
     document.getElementById('tb').innerHTML = '<tr><td colspan="'+COLS+'" class="loading">Backend not configured.</td></tr>';
     return;
   }
@@ -239,7 +239,7 @@ function boot(){
       setBanner('Live from Google Sheet &middot; ' + rows.length + ' records &middot; last synced ' + now.toLocaleTimeString('en-IN') + ' &middot; <button class="refresh" onclick="boot()">Refresh now</button>');
     })
     .catch(function(err){
-      setBanner('? Could not load live data (' + err.message + '). <button class="refresh" onclick="boot()">Retry</button>', true);
+      setBanner('⚠ Could not load live data (' + err.message + '). <button class="refresh" onclick="boot()">Retry</button>', true);
       if(!DATA.length) document.getElementById('tb').innerHTML = '<tr><td colspan="'+COLS+'" class="loading">Could not connect to backend.</td></tr>';
     });
 }
@@ -372,7 +372,7 @@ function openQuotationModal(id){
   var rawType = String(r.amcCmc || 'AMC').toUpperCase();
   document.getElementById('qf_contractType').value = (rawType.indexOf('CMC') !== -1 || rawType.indexOf('CAMC') !== -1) ? 'CMC' : 'AMC';
   document.getElementById('qf_serialNo').value = (r.serialNo && r.serialNo!=='N/A') ? r.serialNo : '';
-  document.getElementById('qf_invoiceNo').value = r.poNumber || '';
+  document.getElementById('qf_poNumber').value = r.poNumber || '';
   document.getElementById('qf_invoiceDate').value = r.invoiceDate ? formatDate(r.invoiceDate) : '';
   document.getElementById('qf_invoiceAmount').value = r.invoiceAmount || '';
   document.getElementById('qf_contractNo').value = '';
@@ -395,7 +395,7 @@ function closeQuotationModal(){
 function submitQuotation(){
   if(!API_URL || API_URL.indexOf('PASTE_YOUR') === 0){
     var st = document.getElementById('qf_status');
-    st.textContent = '? Backend URL configured nahi hai.';
+    st.textContent = '⚠ Backend URL configured nahi hai.';
     st.className = 'modal-status err';
     return;
   }
@@ -407,7 +407,7 @@ function submitQuotation(){
     contractType: document.getElementById('qf_contractType').value,
     equipmentName: document.getElementById('qf_equipmentName').value,
     serialNo: document.getElementById('qf_serialNo').value,
-    invoiceNo: document.getElementById('qf_invoiceNo').value,
+    poNumber: document.getElementById('qf_poNumber').value,
     invoiceDate: document.getElementById('qf_invoiceDate').value,
     invoiceAmount: document.getElementById('qf_invoiceAmount').value,
     contractNo: document.getElementById('qf_contractNo').value,
@@ -433,16 +433,16 @@ function submitQuotation(){
       btn.disabled = false;
       if(data.success){
         st.className = 'modal-status ok';
-        st.innerHTML = '? Quotation ready — <a href="'+data.url+'" target="_blank" rel="noopener">Open / Download PDF</a>';
+        st.innerHTML = '✅ Quotation ready — <a href="'+data.url+'" target="_blank" rel="noopener">Open / Download PDF</a>';
       } else {
         st.className = 'modal-status err';
-        st.textContent = '? ' + (data.error || 'Kuch galat ho gaya.');
+        st.textContent = '⚠ ' + (data.error || 'Kuch galat ho gaya.');
       }
     })
     .catch(function(err){
       btn.disabled = false;
       st.className = 'modal-status err';
-      st.textContent = '? Request fail ho gayi: ' + err.message;
+      st.textContent = '⚠ Request fail ho gayi: ' + err.message;
     });
 }
 
