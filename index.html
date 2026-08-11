@@ -229,7 +229,7 @@ function setBanner(html, isErr){
 
 function boot(){
   if(!API_URL || API_URL.indexOf('PASTE_YOUR') === 0){
-    setBanner('⚠ Backend URL set nahi hai. index.html me API_URL variable set karo (Apps Script Web App /exec link).', true);
+    setBanner('? Backend URL set nahi hai. index.html me API_URL variable set karo (Apps Script Web App /exec link).', true);
     document.getElementById('tb').innerHTML = '<tr><td colspan="'+COLS+'" class="loading">Backend not configured.</td></tr>';
     return;
   }
@@ -242,7 +242,7 @@ function boot(){
       setBanner('Live from Google Sheet &middot; ' + rows.length + ' records &middot; last synced ' + now.toLocaleTimeString('en-IN') + ' &middot; <button class="refresh" onclick="boot()">Refresh now</button>');
     })
     .catch(function(err){
-      setBanner('⚠ Could not load live data (' + err.message + '). <button class="refresh" onclick="boot()">Retry</button>', true);
+      setBanner('? Could not load live data (' + err.message + '). <button class="refresh" onclick="boot()">Retry</button>', true);
       if(!DATA.length) document.getElementById('tb').innerHTML = '<tr><td colspan="'+COLS+'" class="loading">Could not connect to backend.</td></tr>';
     });
 }
@@ -401,7 +401,7 @@ function closeQuotationModal(){
 function submitQuotation(){
   if(!API_URL || API_URL.indexOf('PASTE_YOUR') === 0){
     var st = document.getElementById('qf_status');
-    st.textContent = '⚠ Backend URL configured nahi hai.';
+    st.textContent = '? Backend URL configured nahi hai.';
     st.className = 'modal-status err';
     return;
   }
@@ -442,7 +442,7 @@ function submitQuotation(){
       btn.disabled = false;
       if(data.success){
         st.className = 'modal-status ok';
-        st.innerHTML = '✅ Quotation ready — <a href="'+data.url+'" target="_blank" rel="noopener">Open / Download PDF</a>';
+        st.innerHTML = '? Quotation ready — <a href="'+data.url+'" target="_blank" rel="noopener">Open / Download PDF</a>';
         // Send Email only appears once a PDF has actually been generated —
         // and it emails this exact PDF (same fileId), never a fresh one.
         LAST_QUOTATION = {
@@ -456,13 +456,13 @@ function submitQuotation(){
         emailBtn.style.display = 'inline-block';
       } else {
         st.className = 'modal-status err';
-        st.textContent = '⚠ ' + (data.error || 'Kuch galat ho gaya.');
+        st.textContent = '? ' + (data.error || 'Kuch galat ho gaya.');
       }
     })
     .catch(function(err){
       btn.disabled = false;
       st.className = 'modal-status err';
-      st.textContent = '⚠ Request fail ho gayi: ' + err.message;
+      st.textContent = '? Request fail ho gayi: ' + err.message;
     });
 }
 
@@ -482,16 +482,16 @@ function sendQuotationEmail(){
       emailBtn.disabled = false;
       if(data.success){
         st.className = 'modal-status ok';
-        st.innerHTML = '✅ Quotation sent successfully to ' + esc(data.email);
+        st.innerHTML = '? Quotation sent successfully to ' + esc(data.email);
       } else {
         st.className = 'modal-status err';
-        st.textContent = '⚠ ' + (data.error || 'Email could not be sent. Please try again.');
+        st.textContent = '? ' + (data.error || 'Email could not be sent. Please try again.');
       }
     })
     .catch(function(err){
       emailBtn.disabled = false;
       st.className = 'modal-status err';
-      st.textContent = '⚠ Email could not be sent. Please try again.';
+      st.textContent = '? Email could not be sent. Please try again.';
     });
 }
 
