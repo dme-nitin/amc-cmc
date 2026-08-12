@@ -491,7 +491,7 @@ function sendQuotationEmail(){
     .catch(function(err){
       emailBtn.disabled = false;
       st.className = 'modal-status err';
-      st.textContent = '? Email could not be sent. Please try again.';
+      st.textContent = '? Email Error (network/request): ' + err.message;
     });
 }
 
